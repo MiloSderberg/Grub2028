@@ -393,7 +393,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
 --- !u!65 &532340599
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -499,17 +499,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharMover
   legLength: 5
-  cToLStart: 0
-  movementSpeed: 100
+  cToLStart: 1
+  movementSpeed: 50
   friction: 0.95
   jumpHeight: 500
   jumpTime: 1
-  weight: 50
+  weight: 100
   resetSpeed: 10
   lookDirSpeed: 10
   headRestDist: 2
   camBase: {fileID: 1583471078}
   head: {fileID: 770332335}
+  legArea: {fileID: 0}
   leftLeg: {fileID: 1670546240}
   rightLeg: {fileID: 40960926}
 --- !u!114 &532340604

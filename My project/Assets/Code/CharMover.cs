@@ -1,7 +1,26 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class CharMover : MonoBehaviour
 {
+    /* Removed code:
+
+    ████████████████████████
+        Debug.DrawLine(transform.position - (transform.up * cToLStart), transform.position - (transform.up * (legLength + cToLStart)), Color.red);
+        if (Physics.Raycast(transform.position - (transform.up * cToLStart), -transform.up, out hit, legLength, 1 << 3))
+        {
+            float dTg = 1 + hit.distance;
+            rb.AddForce(transform.up * weight / dTg);
+        }
+        else if (rb.linearVelocity.y > 0 && jumpTimer <= 0)
+        {
+            float velocityY = Mathf.Lerp(rb.linearVelocity.y, 0, resetSpeed * Time.deltaTime);
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x, velocityY, rb.linearVelocity.z);
+        }
+    ████████████████████████
+
+     */
+
+
     public float legLength;
     public float cToLStart;
     public float movementSpeed;
@@ -18,9 +37,12 @@ public class CharMover : MonoBehaviour
     float jumpTimer;
     public GameObject camBase;
     public GameObject head;
+    public GameObject legArea;
+
     bool isGrounded;
     bool leftLegExists, rightLegExists;
-    Vector3 leftFootPos, rightFootPos;
+    bool moveLeftLeg, moveRightLeg;
+    Vector3 leftFootGoal, rightFootGoal;
     public GameObject leftLeg, rightLeg;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -36,9 +58,14 @@ public class CharMover : MonoBehaviour
         transform.rotation = Quaternion.Euler(0f, rotY, 0f);
         rb.maxAngularVelocity = 0;
 
+        // Construction start
+        //███████████████████████████████████████████████
         jumpTimer -= Time.deltaTime;
-        Debug.DrawLine(transform.position - (transform.up * cToLStart), transform.position - (transform.up * (legLength + cToLStart)), Color.red);
-        if (Physics.Raycast(transform.position - (transform.up * cToLStart), -transform.up, out hit, legLength, 1 << 3))
+
+
+        // ██
+
+        if (Physics.CheckBox(transform.position - (transform.up * legLength / 2) - (transform.up * cToLStart), new Vector3(transform.lossyScale.x / 2, legLength / 2, transform.lossyScale.z / 2), Quaternion.LookRotation(transform.right), 1 << 3))
         {
             float dTg = 1 + hit.distance;
             rb.AddForce(transform.up * weight / dTg);
@@ -49,6 +76,8 @@ public class CharMover : MonoBehaviour
             rb.linearVelocity = new Vector3(rb.linearVelocity.x, velocityY, rb.linearVelocity.z);
         }
 
+        // ██
+
         if (Physics.Raycast(transform.position - (transform.up * cToLStart), -transform.up, out hit, legLength + 1, 1 << 3))
         {
             isGrounded = true;
@@ -57,6 +86,8 @@ public class CharMover : MonoBehaviour
         {
             isGrounded = false;
         }
+        // ███████████████████████████████████████████████
+        // Construction end
 
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
@@ -88,54 +119,67 @@ public class CharMover : MonoBehaviour
         }
         rb.linearVelocity = new Vector3(rb.linearVelocity.x * friction, rb.linearVelocity.y, rb.linearVelocity.z * friction);
 
-        Vector3 startPos = transform.position - (transform.up * cToLStart);
+        Vector3 lStartPos = transform.position - (transform.up * cToLStart) - (transform.right / 2);
         if (!leftLegExists)
         {
             Vector3 speedOffset = new Vector3(rb.linearVelocity.x * -1, 0, rb.linearVelocity.z * -1);
             speedOffset = Vector3.ClampMagnitude(speedOffset, legLength / 2);
-            Vector3 leftFootGoal = transform.position - (transform.up * (cToLStart + legLength + 1) + speedOffset);
-            Vector3 goalDir = (leftFootGoal - (startPos - transform.right)).normalized;
 
-            Debug.DrawLine(startPos, startPos + goalDir * legLength * 2, Color.cyan);
+            leftFootGoal = transform.position - (transform.up * (cToLStart + legLength) + speedOffset);
+            Vector3 goalDir = (leftFootGoal - (lStartPos + transform.right)).normalized;
 
-            if (Physics.Raycast(startPos, goalDir, out hit, legLength + 1, 1 << 3))
+            Debug.DrawLine(lStartPos, lStartPos + goalDir * legLength, Color.cyan);
+            if (Physics.Raycast(lStartPos, goalDir, out hit, legLength + 2, 1 << 3))
             {
-                Vector3 centerPos = startPos + (goalDir * (hit.distance / 2));
-                leftLeg.transform.position = centerPos;
-                leftLeg.transform.localScale = new Vector3(.5f, hit.distance, .5f);
-                leftLeg.transform.rotation = Quaternion.LookRotation(goalDir, transform.forward);
+                moveLeftLeg = true;
                 leftLegExists = true;
             }
         }
-        else if (Vector3.Distance(leftFootPos, startPos) > legLength + 1)
+        else if (Vector3.Distance(leftFootGoal, lStartPos) > legLength + 1)
         {
             leftLegExists = false;
+            moveLeftLeg = false;
+        }
+        if (moveLeftLeg)
+        {
+            Vector3 goalDir = (leftFootGoal - (lStartPos + transform.right)).normalized;
+            Vector3 centerPos = lStartPos + (goalDir * (hit.distance / 2));
+            leftLeg.transform.position = centerPos;
+            leftLeg.transform.localScale = new Vector3(.5f, .5f, hit.distance);
+            leftLeg.transform.rotation = Quaternion.LookRotation(goalDir);
         }
 
+        Vector3 rStartPos = transform.position - (transform.up * cToLStart) + (transform.right / 2);
         if (!rightLegExists)
         {
             Vector3 speedOffset = new Vector3(rb.linearVelocity.x * -1, 0, rb.linearVelocity.z * -1);
-            speedOffset = Vector3.ClampMagnitude(speedOffset, legLength / 2);
-            Vector3 leftFootGoal = transform.position - (transform.up * (cToLStart + legLength + 1) + speedOffset);
-            Vector3 goalDir = (leftFootGoal - (startPos + transform.right)).normalized;
+            speedOffset = Vector3.ClampMagnitude(speedOffset, legLength / 2); 
 
-            Debug.DrawLine(startPos, startPos + goalDir * legLength * 2, Color.cyan);
+            rightFootGoal = transform.position - (transform.up * (cToLStart + legLength) + speedOffset);
+            Vector3 goalDir = (rightFootGoal - (rStartPos + transform.right)).normalized;
 
-            if (Physics.Raycast(startPos, goalDir, out hit, legLength + 1, 1 << 3))
+            Debug.DrawLine(rStartPos, rStartPos + goalDir * legLength, Color.cyan);
+            if (Physics.Raycast(rStartPos, goalDir, out hit, legLength + 2, 1 << 3))
             {
-                Vector3 centerPos = startPos + (goalDir * (hit.distance / 2));
-                rightLeg.transform.position = centerPos;
-                rightLeg.transform.localScale = new Vector3(.5f, hit.distance, .5f);
-                rightLeg.transform.rotation = Quaternion.LookRotation(goalDir, transform.forward);
+                moveRightLeg = true;
                 rightLegExists = true;
             }
         }
-        else if (Vector3.Distance(rightFootPos, startPos) > legLength + 1)
+        else if (Vector3.Distance(rightFootGoal, rStartPos) > legLength + 1)
         {
             rightLegExists = false;
+            moveRightLeg = false;
         }
-
+        if (moveRightLeg)
+        {
+            Vector3 goalDir = (rightFootGoal - (rStartPos - transform.right)).normalized;
+            Vector3 centerPos = rStartPos + (goalDir * (hit.distance / 2));
+            rightLeg.transform.position = centerPos;
+            rightLeg.transform.localScale = new Vector3(.5f, .5f, hit.distance);
+            rightLeg.transform.rotation = Quaternion.LookRotation(goalDir);
+        }
     }
+
     private void FixedUpdate()
     {
         head.transform.position = transform.position + transform.up * headRestDist;
